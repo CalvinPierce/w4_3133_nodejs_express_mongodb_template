@@ -29,6 +29,7 @@ const EmployeeSchema = new mongoose.Schema({
   gender: {
     type: String,
     required: true,
+    lowercase: true,
     enum:['male', 'female', 'other']
   },
   city:{
@@ -64,19 +65,35 @@ const EmployeeSchema = new mongoose.Schema({
 });
 
 //Declare Virtual Fields
-
+EmployeeSchema.virtual('fullname')
+.get(function() {
+  return `${this.firstname} ${this.lastname}`
+})
+.set(function(value) {
+  console.log(value)
+})
 
 //Custom Schema Methods
 //1. Instance Method Declaration
+EmployeeSchema.methods.getFullName = function(){
+  return `${this.firstname} ${this.lastname}`
+}
 
+EmployeeSchema.methods.getFormattedSalary = function(){
+  return `$${this.salary}`
+}
 
 //2. Static method declararion
-
+EmployeeSchema.static("getEmployeeByFirstName", function(value) {
+  return this.find({firstname: value})
+});
 
 //Writing Query Helpers
+EmployeeSchema.query.byFirstName = function(fnm){
+  return this.where({firstname: fnm})
+}
 
-
-
+//Pre Middleware
 EmployeeSchema.pre('save', (next) => {
   console.log("Before Save")
   let now = Date.now()
@@ -88,7 +105,7 @@ EmployeeSchema.pre('save', (next) => {
   }
   
   // Call the next function in the pre-save chain
-  next()
+  next() //Required to save the record
 });
 
 EmployeeSchema.pre('findOneAndUpdate', (next) => {
@@ -99,7 +116,7 @@ EmployeeSchema.pre('findOneAndUpdate', (next) => {
   next()
 });
 
-
+//Post Middleware
 EmployeeSchema.post('init', (doc) => {
   console.log('%s has been initialized from the db', doc._id);
 });
@@ -116,5 +133,6 @@ EmployeeSchema.post('remove', (doc) => {
   console.log('%s has been removed', doc._id);
 });
 
+//Create model
 const Employee = mongoose.model("Employee", EmployeeSchema);
 module.exports = Employee;
